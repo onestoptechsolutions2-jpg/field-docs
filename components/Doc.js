@@ -10,19 +10,32 @@ const TPL={'Installation – Network':['Confirmed floor plan / survey with clien
 'Training':['Prepared training material','Trained users on core functions','Answered questions and noted issues','Shared user guides'],
 'Support':['Logged fault as reported','Diagnosed the issue','Applied fix / replaced part','Tested and confirmed with client']};
 const SIGN={t:'Sign off',h:'Confirm your name and sign. Below is the document as the client will see it.',k:'sign'},ESC={t:'Escalate?',h:'Does your supervisor need to know about this job?',k:'esc'},SHARE={t:'Send to client',h:'The client opens the link, adds a comment and signs online.',k:'share'};
+const PHOTOS={t:'Photos',h:'Add photos (optional). Tap to use your camera or pick from your gallery.',k:'photos'};
 const STEPS={
- sr:[{t:'The job',h:'What are you doing, and for whom?',k:'fields',f:['jobtype','client','project','product'],req:['client']},{t:'Arrival',h:'When did you get to site?',k:'fields',f:['start','timein'],req:['start']},{t:'Work done',h:'Add each piece of work you did. Use “Add another” for more.',k:'work'},{t:'Equipment installed',h:'Record serial numbers of what you installed or replaced. Optional — skip if none.',k:'items',rk:'items',opt:1,inst:1},{t:'Outcome',h:'How did the job end?',k:'fields',f:['outcome'],req:['outcome']},SIGN,ESC,SHARE],
- ho:[{t:'Handover details',h:'Who is receiving the equipment?',k:'fields',f:['job','client','date','by','dept'],req:['client']},{t:'Equipment',h:'Add each item you are handing over.',k:'items'},{t:'Remarks',h:'Anything else to note? (optional)',k:'fields',f:['rem']},SIGN,ESC,SHARE],
- wt:[{t:'Who & what',h:'Who raised this ticket?',k:'fields',f:['client','contact','product','priority'],req:['client']},{t:'The issue',h:'What was reported?',k:'fields',f:['issue','reported','timein'],req:['issue']},{t:'Work done',h:'Log each action you took, with minutes spent.',k:'work'},{t:'Resolution',h:'How did it end?',k:'fields',f:['outcome','resolution'],req:['outcome']},SIGN,ESC,SHARE]};
+ sr:[{t:'The job',h:'What are you doing, and for whom?',k:'fields',f:['jobtype','client','project','product'],req:['client']},{t:'Arrival',h:'When did you get to site?',k:'fields',f:['start','timein'],req:['start']},{t:'Work done',h:'Add each piece of work you did. Use “Add another” for more.',k:'work'},{t:'Equipment installed',h:'Record serial numbers of what you installed or replaced. Optional — skip if none.',k:'items',rk:'items',opt:1,inst:1},PHOTOS,{t:'Outcome',h:'How did the job end?',k:'fields',f:['outcome'],req:['outcome']},SIGN,ESC,SHARE],
+ ho:[{t:'Handover details',h:'Who is receiving the equipment?',k:'fields',f:['job','client','date','by','dept'],req:['client']},{t:'Equipment',h:'Add each item you are handing over.',k:'items'},{t:'Remarks',h:'Anything else to note? (optional)',k:'fields',f:['rem']},PHOTOS,SIGN,ESC,SHARE],
+ wt:[{t:'Who & what',h:'Who raised this ticket?',k:'fields',f:['client','contact','product','priority'],req:['client']},{t:'The issue',h:'What was reported?',k:'fields',f:['issue','reported','timein'],req:['issue']},{t:'Work done',h:'Log each action you took, with minutes spent.',k:'work'},PHOTOS,{t:'Resolution',h:'How did it end?',k:'fields',f:['outcome','resolution'],req:['outcome']},SIGN,ESC,SHARE]};
 const nb=r=>Object.values(r).some(v=>String(v||'').trim());
-export default function Doc({doc,sups,me,ev,clients,products}){
+export default function Doc({doc,sups,me,ev,clients,products,photos}){
  const [data,setData]=useState(doc.data),[status,setStatus]=useState(doc.status),[msg,setMsg]=useState(''),[cl,setCl]=useState(clients||[]);
  const [esc,setEsc]=useState({status:doc.esc_status,reason:doc.esc_reason,note:doc.esc_note,response:doc.esc_response,toName:doc.esc_to_name});
+ const [pics,setPics]=useState(photos||[]);
  const first=useRef(1),locked=status==='signed';
  useEffect(()=>{if(first.current){first.current=0;return}if(locked)return;setMsg('Saving…');const t=setTimeout(async()=>{const r=await fetch('/api/docs/'+doc.id,{method:'PUT',body:JSON.stringify(data)});setMsg(r.ok?'Saved':'Save failed')},600);return()=>clearTimeout(t)},[data]);
- const P={doc,data,setData,sups,me,esc,setEsc,setStatus,setMsg,msg,cl,setCl,prods:products||[]};
+ const P={doc,data,setData,sups,me,esc,setEsc,setStatus,setMsg,msg,cl,setCl,prods:products||[],pics,setPics,locked};
  return data.fin||locked?<View {...P} status={status} locked={locked} ev={ev}/>:<Wizard {...P}/>}
-function Wizard({doc,data,setData,sups,me,esc,setEsc,setStatus,setMsg,msg,cl,setCl,prods}){
+function Photos({doc,pics,setPics,locked}){
+ const [busy,setBusy]=useState(false),[err,setErr]=useState('');
+ const up=async e=>{const files=[...(e.target.files||[])];e.target.value='';if(!files.length)return;setBusy(true);setErr('');
+  const f=new FormData();files.forEach(x=>f.append('photos',x));
+  const r=await fetch('/api/docs/'+doc.id+'/photo',{method:'POST',body:f});const j=await r.json();setBusy(false);
+  if(!r.ok)return setErr(j.error||'Upload failed');setPics([...pics,...j.photos])};
+ const del=async id=>{if(!confirm('Remove this photo?'))return;const r=await fetch('/api/attachments/'+id,{method:'DELETE'});if(r.ok)setPics(pics.filter(p=>p.id!==id))};
+ return <div className="card">{!locked&&<div className="row" style={{marginBottom:8}}><input type="file" accept="image/*" capture="environment" multiple onChange={up} disabled={busy}/>{busy&&<span className="mut">Uploading…</span>}</div>}
+  {err&&<p className="err">{err}</p>}
+  {pics.length>0?<div className="row" style={{flexWrap:'wrap'}}>{pics.map(p=><div key={p.id} style={{position:'relative'}}><a href={'/api/attachments/'+p.id} target="_blank"><img src={'/api/attachments/'+p.id} alt={p.name} style={{width:100,height:100,objectFit:'cover',borderRadius:8,border:'1px solid var(--line)'}}/></a>
+   {!locked&&<button className="link" style={{position:'absolute',top:2,right:2,background:'var(--paper)',borderRadius:99,padding:'0 5px'}} onClick={()=>del(p.id)}>×</button>}</div>)}</div>:<p className="mut">No photos yet.</p>}</div>}
+function Wizard({doc,data,setData,sups,me,esc,setEsc,setStatus,setMsg,msg,cl,setCl,prods,pics,setPics,locked}){
  const f=data.f||{},S=STEPS[doc.type].filter(x=>!x.inst||/Installation|Maintenance/.test(f.jobtype||'')),i=Math.min(data.step||0,S.length-1),s=S[i],last=i===S.length-1;
  const rk=s.rk||'rows',rows=data[rk]||[],cols=s.k==='items'?C.ho:C[doc.type],list=s.k==='work'||s.k==='items';
  const up=(k,v)=>setData({...data,f:{...f,[k]:v}}),upr=(j,k,v)=>setData({...data,[rk]:rows.map((r,x)=>x===j?{...r,[k]:v}:r)});
@@ -40,13 +53,15 @@ function Wizard({doc,data,setData,sups,me,esc,setEsc,setStatus,setMsg,msg,cl,set
    {s.opt&&!rows.length&&<p className="mut">Nothing recorded — tap Add, or Next to skip.</p>}
    <button className="btn" onClick={()=>setData({...data,[rk]:[...rows,{}]})}>+ Add another {s.k==='work'?'work done':'item'}</button></>}
   {s.k==='sign'&&<><div className="card"><div className="f"><label>Your name</label><input value={data.tech||''} onChange={e=>setData({...data,tech:e.target.value})}/></div><div className="f"><label>Your signature</label><Sig value={data.techsig} onChange={v=>setData({...data,techsig:v})}/></div></div><Sheet type={doc.type} data={data}><ClientBlock d={doc}/></Sheet></>}
+  {s.k==='photos'&&<Photos doc={doc} pics={pics} setPics={setPics} locked={false}/>}
   {s.k==='esc'&&<Esc doc={doc} me={me} sups={sups} esc={esc} setEsc={setEsc} wizard hint={hint}/>}
   {s.k==='share'&&<div className="card"><Share doc={sd(doc,data,cl)} setStatus={setStatus} setMsg={setMsg}/><p className="mut">You can also send it later from the document page.</p></div>}
   <div className="wznav"><button className="btn" disabled={i===0} onClick={()=>setData({...data,step:i-1})}>Back</button><button className="btn p" disabled={!ok} onClick={next}>{last?'Finish ✓':'Next'}</button></div></div>}
-function View({doc,data,setData,me,sups,esc,setEsc,setStatus,setMsg,msg,status,locked,ev,cl}){
+function View({doc,data,setData,me,sups,esc,setEsc,setStatus,setMsg,msg,status,locked,ev,cl,pics,setPics}){
  return <><div className="row noprint" style={{marginBottom:10}}><h2 style={{margin:0}}>{doc.num}</h2><span className={'badge '+status}>{status}</span>{esc.status&&<span className={'badge esc-'+esc.status}>⚑ {esc.status}</span>}<span className="mut">{msg}</span><span className="grow"/>
   {!locked&&<button className="btn" onClick={()=>setData({...data,fin:false,step:0})}>Edit steps</button>}<button className="btn" onClick={()=>print()}>Print / PDF</button></div>
   <div className="noprint"><Esc doc={doc} me={me} sups={sups} esc={esc} setEsc={setEsc}/>{!locked&&<div className="card"><b>Send to client for signing</b><Share doc={sd(doc,data,cl)} setStatus={setStatus} setMsg={setMsg}/></div>}</div>
+  {(pics.length>0||!locked)&&<><b>Photos</b><Photos doc={doc} pics={pics} setPics={setPics} locked={locked}/></>}
   <Sheet type={doc.type} data={data}><ClientBlock d={{...doc,status}}/></Sheet>
   <ul className="tl noprint">{ev.map((e,i)=><li key={i}>{new Date(e.at).toLocaleString()} — {e.what}</li>)}</ul></>}
 

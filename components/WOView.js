@@ -47,6 +47,7 @@ export default function WOView({wo,S,C,T,ev,docs,assets,users,me,sups,G,allFiles
   <div className="card"><b>Time by responsibility</b><table className="list" style={{marginTop:8}}><tbody>{Object.entries(C.byOwner).sort((a,b)=>b[1]-a[1]).map(([k,v])=><tr key={k}><td>{k}</td><td>{dur(v)}</td></tr>)}{!Object.keys(C.byOwner).length&&<tr><td className="mut">No time recorded yet.</td></tr>}</tbody></table></div>
   <h3>Tasks</h3>
   {T.map(t=><Task key={t.id} t={t} users={users} me={me} act={act} call={call} post={post} ev={ev} open={ACTV.includes(t.status)} router={r} sups={sups} allFiles={allFiles} cinfo={cinfo} teams={teams} parties={parties}/>)}
+  {wo.status==='open'&&sup&&<AddTask wo={wo} teams={teams} sups={sups} call={call}/>}
   <div className="card"><b>Field documents</b><p className="mut" style={{margin:'4px 0'}}>Start these from the relevant task. They are the evidence for the work.</p>{docs.map(d=><div key={d.id}><Link href={'/docs/'+d.id}>{d.num}</Link> <span className="mut">{d.type==='sr'?'Site report':d.type==='wt'?'Work ticket':'Handover'}</span> <span className={'badge '+d.status}>{d.status}</span>{d.fin&&d.status!=='signed'&&<span className="badge done">completed</span>}</div>)}{!docs.length&&<span className="mut">None yet.</span>}</div>
   <div className="card"><b>Assets</b>{assets.map(a=><div key={a.id}>{a.name} <span className="mut">{a.serial&&'S/N '+a.serial} {a.model}</span></div>)}
    <div className="row" style={{marginTop:8}}><input placeholder="Asset (e.g. NVR-01)" value={as.name} onChange={e=>setAs({...as,name:e.target.value})}/><input placeholder="Serial" value={as.serial} onChange={e=>setAs({...as,serial:e.target.value})}/><input placeholder="Model" value={as.model} onChange={e=>setAs({...as,model:e.target.value})}/><button className="btn" onClick={async()=>{if(await call(`/api/wo/${wo.id}/assets`,as))setAs({name:'',serial:'',model:''})}}>Link asset</button></div></div>
@@ -102,3 +103,12 @@ function Task({t,users,sups,me,act,call,post,ev,open,router,allFiles,cinfo,teams
   {mode==='wait'&&<div className="row"><select value={wp} onChange={e=>setWp(e.target.value)} style={{width:180}}>{parties.map(p=><option key={p}>{p}</option>)}</select><input placeholder="Why are we waiting? (e.g. camera brackets unavailable)" value={wr} onChange={e=>setWr(e.target.value)}/>{B('Confirm',async()=>{if(await act(t.id,'wait',{party:wp,reason:wr}))setMode('')},1)}</div>}
   {mode==='rev'&&<div className="row"><input type="datetime-local" value={due} onChange={e=>setDue(e.target.value)} style={{maxWidth:230}}/><input placeholder="Reason for the new deadline" value={dr} onChange={e=>setDr(e.target.value)}/>{B('Save',async()=>{if(await act(t.id,'revise',{due,reason:dr}))setMode('')},1)}</div>}
  </details>}
+function AddTask({wo,teams,sups,call}){
+ const [open,setOpen]=useState(false),[f,setF]=useState({title:'',team:teams[0]||'',mins:60,supervisor_id:''});
+ if(!open)return <button className="btn" onClick={()=>setOpen(true)}>+ Add task</button>;
+ return <div className="card entry"><b>Add a task to this work order</b><p className="mut">It becomes available immediately (no dependency on other tasks).</p>
+  <div className="f"><label>Title</label><input value={f.title} onChange={e=>setF({...f,title:e.target.value})}/></div>
+  <div className="f"><label>Department</label><select value={f.team} onChange={e=>setF({...f,team:e.target.value})}>{teams.map(t=><option key={t}>{t}</option>)}</select></div>
+  <div className="f"><label>Planned minutes</label><input type="number" min="5" value={f.mins} onChange={e=>setF({...f,mins:e.target.value})}/></div>
+  <div className="f"><label>Supervisor (optional)</label><select value={f.supervisor_id} onChange={e=>setF({...f,supervisor_id:e.target.value})}><option value="">None</option>{sups.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></div>
+  <div className="row"><button className="btn p" onClick={async()=>{if(await call(`/api/wo/${wo.id}/task`,f))setOpen(false)}}>Add task</button><button className="link" onClick={()=>setOpen(false)}>Cancel</button></div></div>}
