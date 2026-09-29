@@ -8,6 +8,6 @@ export default async function Shell({u,children}){
    <Pwa/><Link href="/workorders">Work orders</Link><Link href="/documents">Documents</Link><Link href="/assets">Assets</Link>{u.role!=='tech'&&<Link href="/schedules">Schedules</Link>}<Link href="/reports">Reports</Link>
    <Link href="/escalations">Escalations{n>0&&<span className="badge esc-open" style={{marginLeft:6}}>{n}</span>}</Link>
    {u.role!=='tech'&&<Link href="/clients">Clients</Link>}
-   {u.role==='admin'&&<><Link href="/templates">Workflows</Link><Link href="/products">Products</Link><Link href="/settings">Calendar</Link><Link href="/users">Team</Link><Link href="/audit">Audit log</Link></>}
+   {u.role==='admin'&&<Link href="/settings">Settings</Link>}
    <MailPref on={u.email_alerts}/><Link href="/account" className="mut">{u.name}</Link><a href="/api/logout">Log out</a>
   </nav></div><div className="wrap">{children}</div></>}
