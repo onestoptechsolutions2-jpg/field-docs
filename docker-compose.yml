@@ -9,7 +9,7 @@ services:
     build: .
     restart: unless-stopped
     depends_on: { db: { condition: service_healthy } }
-    ports: ["3000:3000"]
+    ports: ["3090:3000"]
     env_file: .env
     environment:
       DATABASE_URL: "postgres://fd:${DB_PASSWORD:-fdpass}@db:5432/fd"
