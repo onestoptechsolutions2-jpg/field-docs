@@ -12,6 +12,7 @@ services:
     ports: ["3090:3000"]
     env_file: .env
     environment:
+      TZ: Africa/Nairobi
       DATABASE_URL: "postgres://fd:${DB_PASSWORD:-fdpass}@db:5432/fd"
 volumes:
   pgdata:

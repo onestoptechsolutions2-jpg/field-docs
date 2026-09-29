@@ -1,8 +1,8 @@
 import Link from 'next/link';import {redirect} from 'next/navigation';import {randomBytes} from 'crypto';
 import {q,log} from '@/lib/db';import {need} from '@/lib/auth';import Shell from '@/components/Shell';
 export const dynamic='force-dynamic';
-const K={survey:['sr','Site Survey'],hw:['sr','Installation – Hardware'],sw:['sr','Installation – Software'],maint:['sr','Maintenance'],ticket:['wt'],handover:['ho']};
-const TILES=[['survey','📐','Site survey','Assess a site before work'],['hw','🔧','Hardware install','Devices, cabling, racks'],['sw','💾','Software install','Deploy & configure systems'],['maint','🛠️','Maintenance','Routine service visit'],['ticket','🎫','Work ticket','Support request or fault'],['handover','📦','Equipment handover','Hand items to a client']];
+const K={survey:['sr','Site Survey'],net:['sr','Installation – Network'],cctv:['sr','Installation – CCTV'],bio:['sr','Installation – Biometric / Access Control'],hw:['sr','Installation – Hardware'],sw:['sr','Installation – Software'],maint:['sr','Maintenance'],ticket:['wt'],handover:['ho']};
+const TILES=[['survey','📐','Site survey','Assess a site before work'],['net','🌐','Network install','LAN, Wi-Fi, cabling, firewall'],['cctv','📹','CCTV install','Cameras, NVR, remote view'],['bio','🖐️','Biometric & access','Readers, locks, enrolment'],['hw','🔧','Hardware install','Devices, cabling, racks'],['sw','💾','Software install','Deploy & configure systems'],['maint','🛠️','Maintenance','Routine service visit'],['ticket','🎫','Work ticket','Support request or fault'],['handover','📦','Equipment handover','Hand items to a client']];
 async function create(fd){'use server';const u=await need();const [type,jt]=K[fd.get('kind')]||K.survey;const day=new Date().toISOString().slice(0,10);
  const f=type==='sr'?{jobtype:jt,start:day}:type==='ho'?{date:day,by:u.name}:{reported:day,priority:'Medium'};
  const d=(await q('insert into docs(type,owner,token,data) values($1,$2,$3,$4) returning id',[type,u.id,randomBytes(18).toString('hex'),JSON.stringify({f,rows:[{}],tech:u.name,step:0})]))[0];

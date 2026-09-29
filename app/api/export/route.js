@@ -10,7 +10,7 @@ export async function GET(r){const u=await getUser();if(!u)return new Response('
  const E=sh('Equipment',[['Doc No.','num'],['Client','client',24],['#','n',5],['Item','i',30],['Serial number','s',22],['Model','m',18],['Manufacturer','f',18],['Condition','k']]);
  for(const d of docs){const f=d.data?.f||{},rows=(d.data?.rows||[]).filter(x=>Object.values(x).some(Boolean));
   D.addRow({num:d.num,type:TY[d.type],status:d.status,client:f.client,project:f.project||f.job||f.issue,jobtype:f.jobtype,product:f.product,tech:d.tech,created:d.created_at,sent:d.sent_at,signed:d.signed_at,by:d.client_name,comment:d.client_comment,outcome:f.outcome,es:d.esc_status,eto:d.esc_to_name,er:d.esc_reason,ers:d.esc_response});
-  rows.forEach((x,i)=>d.type==='ho'?E.addRow({num:d.num,client:f.client,n:i+1,i:x.i,s:x.s,m:x.m,f:x.f,k:x.k}):W.addRow({num:d.num,type:TY[d.type],client:f.client,n:i+1,w:x.w,s:x.s,m:x.n?+x.n:null}))}
+  rows.forEach((x,i)=>d.type==='ho'?E.addRow({num:d.num,client:f.client,n:i+1,i:x.i,s:x.s,m:x.m,f:x.f,k:x.k}):W.addRow({num:d.num,type:TY[d.type],client:f.client,n:i+1,w:x.w,s:x.s,m:x.n?+x.n:null}));(d.data?.items||[]).filter(x=>Object.values(x).some(Boolean)).forEach((x,i)=>E.addRow({num:d.num,client:f.client,n:i+1,i:x.i,s:x.s,m:x.m,f:x.f,k:x.k}))}
  ['created','sent','signed'].forEach(k=>{D.getColumn(k).numFmt='yyyy-mm-dd hh:mm'});W.getColumn('w').alignment={wrapText:true,vertical:'top'};D.getColumn('comment').alignment={wrapText:true,vertical:'top'};
  const buf=await wb.xlsx.writeBuffer();
  return new Response(buf,{headers:{'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Content-Disposition':`attachment; filename="field-docs-${new Date().toISOString().slice(0,10)}.xlsx"`}})}

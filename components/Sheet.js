@@ -1,7 +1,7 @@
 'use client';
 import Sig from './Sig';
-export const JT=['Site Survey','Installation – Hardware','Installation – Software','Maintenance','Training'];
-export const PRODUCTS=['Nano Safeview (security)','Nano Access','Nano Shule (school)','Nano Time','Nano Pay (payroll)','Florena (agri)','Network / hardware','Other'];
+export const JT=['Site Survey','Installation – Network','Installation – CCTV','Installation – Biometric / Access Control','Installation – Hardware','Installation – Software','Maintenance','Training'];
+export const PRODUCTS=['Nano Safeview (security)','Nano Access','Nano Shule (school)','Nano Time','Nano Pay (payroll)','Florena (agri)','Network','CCTV','Biometric / access control','Other'];
 export const ST=['Done','In progress','Pending','Blocked'],CO=['New','Good','Fair','Faulty'];
 export const TITLE={sr:'Site Report',ho:'HANDOVER',wt:'Work Ticket'};
 export const FD={jobtype:['Job type','sel',JT],client:['Client name','text'],project:['Project / site','text'],product:['System / product','sel',PRODUCTS],start:['Start date','date'],timein:['Time in','time'],
@@ -11,8 +11,8 @@ export const FD={jobtype:['Job type','sel',JT],client:['Client name','text'],pro
 export const P={sr:{pre:['jobtype','client','project','product','start','timein'],post:['outcome']},ho:{pre:['job','client','date','by','dept'],post:['rem']},wt:{pre:['client','contact','product','priority','reported','timein','issue'],post:['outcome','resolution']}};
 export const C={sr:[['w','Work done','area'],['s','Status',ST]],ho:[['i','Item / description','area'],['s','Serial number'],['m','Model'],['f','Manufacturer'],['k','Condition',CO]],wt:[['w','Work done','area'],['n','Minutes','num'],['s','Status',ST]]};
 const now=k=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return k==='time'?p(d.getHours())+':'+p(d.getMinutes()):d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())};
-export const Fld=({k,v,on})=>{const [l,kind,o]=FD[k];const c=e=>on(e.target.value);
- return <div className="f"><label>{l}</label>{kind==='sel'?<select value={v||''} onChange={c}><option value="">Choose…</option>{o.map(x=><option key={x}>{x}</option>)}</select>:kind==='area'?<textarea rows={3} value={v||''} onChange={c}/>:<input type={kind} value={v||''} onChange={c}/>}
+export const Fld=({k,v,on,opts})=>{const [l,kind,o]=FD[k];const c=e=>on(e.target.value);
+ return <div className="f"><label>{l}</label>{kind==='sel'?<select value={v||''} onChange={c}><option value="">Choose…</option>{(opts||o).map(x=><option key={x}>{x}</option>)}</select>:kind==='area'?<textarea rows={3} value={v||''} onChange={c}/>:<input type={kind} value={v||''} onChange={c}/>}
  {(kind==='time'||kind==='date')&&<button type="button" className="nowb" onClick={()=>on(now(kind))}>Use now</button>}</div>};
 const CL={sr:'Client Signature',ho:'Received by (for Client)',wt:'Client Acceptance'};
 export const ClientBlock=({d})=><div><h3>{CL[d.type]}</h3>
@@ -21,10 +21,12 @@ export const ClientBlock=({d})=><div><h3>{CL[d.type]}</h3>
 const Logo=()=><div className="logo"><img src="https://ntlafrica.com/wp-content/uploads/2023/02/Nanosoft-Logo.png" alt="Nanosoft" style={{height:48}} onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='block'}}/><b style={{display:'none',fontSize:30}}>nan<i>●</i>soft</b><small>NANOSOFT TECHNOLOGIES LIMITED · We mind your business</small></div>;
 export default function Sheet({type,data,children}){
  const f=data.f||{},rows=(data.rows||[]).filter(r=>Object.values(r).some(Boolean));
+ const it=type==='sr'?(data.items||[]).filter(r=>Object.values(r).some(Boolean)):[];
  const line=k=><div className="f" key={k}><label>{FD[k][0]}</label><div className="v">{f[k]||'\u00a0'}</div></div>;
  return <div className="sheet"><Logo/><h1>{TITLE[type]}</h1>{P[type].pre.map(line)}
   <div className="tw"><table><thead><tr><th>#</th>{C[type].map(c=><th key={c[0]}>{c[1]}</th>)}</tr></thead><tbody>
   {rows.map((r,i)=><tr key={i}><td className="n">{i+1}</td>{C[type].map(([k])=><td className="c" key={k}>{r[k]}</td>)}</tr>)}</tbody></table></div>
+  {it.length>0&&<><h3>Equipment installed</h3><div className="tw"><table><thead><tr><th>#</th>{C.ho.map(c=><th key={c[0]}>{c[1]}</th>)}</tr></thead><tbody>{it.map((r,i)=><tr key={i}><td className="n">{i+1}</td>{C.ho.map(([k])=><td className="c" key={k}>{r[k]}</td>)}</tr>)}</tbody></table></div></>}
   {type==='wt'&&<p className="mut">Total time: {rows.reduce((a,r)=>a+(+r.n||0),0)} minutes</p>}
   {P[type].post.map(line)}
   <div className="sigs"><div><h3>{type==='ho'?'Issued by (for Nanosoft)':'Technician'}</h3><div className="f"><label>Name</label><div className="v">{data.tech||'\u00a0'}</div></div><Sig value={data.techsig}/></div>{children}</div>

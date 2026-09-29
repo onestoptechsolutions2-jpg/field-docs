@@ -1,1 +1,1 @@
-module.exports={output:'standalone',experimental:{serverComponentsExternalPackages:['pg','nodemailer','exceljs']}}
+module.exports={output:'standalone',experimental:{instrumentationHook:true,serverComponentsExternalPackages:['pg','nodemailer','exceljs','web-push']}}
