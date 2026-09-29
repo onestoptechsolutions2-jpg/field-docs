@@ -4,7 +4,8 @@ export async function GET(r){const u=await getUser();if(!u)return new Response('
  const wb=new ExcelJS.Workbook();
  const sh=(n,cols)=>{const w=wb.addWorksheet(n,{views:[{state:'frozen',ySplit:1}]});w.columns=cols.map(([h,k,wd])=>({header:h,key:k,width:wd||16}));const hr=w.getRow(1);hr.font={bold:true,color:{argb:'FFFFFFFF'}};hr.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0B6BCB'}};return w};
  const S=sh('Summary',[['Metric','a',30],['Value','b',18]]);
- [['Month',m],['Documents',d.total],['Signed',d.signed],['Signed %',d.total?Math.round(d.signed/d.total*100)+'%':'—'],['Awaiting signature',d.pending],['Drafts',d.drafts],['Escalations',d.esc],['Escalations resolved',d.escResolved],['Avg hours to sign',d.avgHrs==null?'—':+d.avgHrs.toFixed(1)],['Ticket hours',+(d.minutes/60).toFixed(1)]].forEach(([a,b])=>S.addRow({a,b}));
+ [['Month',m],['Documents',d.total],['Signed',d.signed],['Signed %',d.total?Math.round(d.signed/d.total*100)+'%':'—'],['Awaiting signature',d.pending],['Drafts',d.drafts],['Escalations',d.esc],['Escalations resolved',d.escResolved],['Avg hours to sign',d.avgHrs==null?'—':+d.avgHrs.toFixed(1)],['Ticket hours',+(d.minutes/60).toFixed(1)],
+  ['Work orders created',W.created],['Work orders done',W.done],['Work orders cancelled',W.cancelled],['SLA compliance %',W.slaPct==null?'—':W.slaPct+'%'],['Avg request→assignment h',W.avgReqToAssign==null?'—':h(W.avgReqToAssign)],['Avg assignment→acceptance h',W.avgAssignToAccept==null?'—':h(W.avgAssignToAccept)],['Rejected assignments',W.rejections],['Returned / reopened tasks',W.reopened]].forEach(([a,b])=>S.addRow({a,b}));
  const K=sh('By Type',[['Type','a',34],['Count','b']]);Object.entries(d.byKind).forEach(([a,b])=>K.addRow({a,b}));
  const B=sh('By Product',[['System / product','a',34],['Count','b']]);Object.entries(d.byProduct).forEach(([a,b])=>B.addRow({a,b}));
  const T=sh('By Technician',[['Technician','n',24],['Docs','d'],['Signed','s'],['Escalations','e'],['Ticket hours','h']]);Object.entries(d.tech).forEach(([n,t])=>T.addRow({n,d:t.docs,s:t.signed,e:t.esc,h:+(t.mins/60).toFixed(1)}));
@@ -13,6 +14,11 @@ export async function GET(r){const u=await getUser();if(!u)return new Response('
  W.list.forEach(x=>WS.addRow({...x,planned:h(x.planned),age:h(x.age),active:h(x.active),assign:h(x.assign),cw:h(x.client_wait),sw:h(x.supplier_wait),oe:h(x.other_ext)}));['created','due','completed'].forEach(k=>{WS.getColumn(k).numFmt='yyyy-mm-dd hh:mm'});
  const SP=sh('Stage Performance',[['Task','t',36],['Team','tm',22],['Done','n'],['Avg plan h','p'],['Avg actual working h','a'],['Avg client/supplier wait h','e']]);W.stages.forEach(s=>SP.addRow({t:s.title,tm:s.team,n:s.n,p:h(s.plan/s.n),a:h(s.work/s.n),e:h(s.ext/s.n)}));
  const OW=sh('Time by Responsibility',[['Owner / party','o',30],['Hours','h']]);Object.entries(W.byOwner).forEach(([o,v])=>OW.addRow({o,h:h(v)}));
+ const BT=sh('Time by Technician',[['Technician','n',24],['Hours','h']]);Object.entries(W.byTech).forEach(([n,v])=>BT.addRow({n,h:h(v)}));
+ const BC=sh('Time by Client',[['Client','n',30],['Hours','h']]);Object.entries(W.byClient).forEach(([n,v])=>BC.addRow({n,h:h(v)}));
+ const SV=sh('SLA by Workflow',[['Service','s',28],['Created','n'],['Done','d'],['On time %','p'],['Avg planned h','pl'],['Avg actual age h','a']]);
+ W.bySvc.forEach(x=>SV.addRow({s:x.service,n:x.n,d:x.done,p:x.slaPct==null?'—':x.slaPct+'%',pl:h(x.avgPlanned),a:x.avgAge==null?'—':h(x.avgAge)}));
+ const RR=sh('Rejected & Reopened',[['Team','t',24],['Rejected assignments','r'],['Returned / reopened','o']]);W.byTeamRR.forEach(x=>RR.addRow({t:x.team,r:x.rejections,o:x.reopened}));
  const D=sh('Documents',[['No.','num'],['Type','kind',30],['Client','client',26],['Technician','tech',20],['Status','status'],['Outcome','outcome',18],['Created','c',18],['Signed','sg',18],['Escalation','e'],['Ticket mins','m']]);
  d.docs.forEach(x=>D.addRow({num:x.num,kind:x.kind,client:x.client,tech:x.tech,status:x.status,outcome:x.outcome,c:x.created_at,sg:x.signed_at,e:x.esc_status,m:x.mins||null}));
  ['c','sg'].forEach(k=>{D.getColumn(k).numFmt='yyyy-mm-dd hh:mm'});

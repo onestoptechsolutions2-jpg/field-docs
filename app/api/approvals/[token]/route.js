@@ -2,6 +2,7 @@ import {NextResponse} from 'next/server';import {createHash} from 'crypto';impor
 const bad=(m,s=400)=>NextResponse.json({error:m},{status:s});
 export async function POST(r,{params}){
  const a=(await q('select * from approvals where token=$1',[params.token]))[0];if(!a)return bad('Not found',404);if(a.status!=='pending')return bad('This request has already been answered',409);
+ if(a.expires_at&&+new Date(a.expires_at)<Date.now())return bad('This link has expired',410);
  const {decision,name,comment,sig}=await r.json(),nm=(name||'').trim(),cm=(comment||'').trim().slice(0,4000);
  if(!['approved','changes','declined'].includes(decision))return bad('Choose a response');if(!nm)return bad('Please enter your name');
  if(decision==='approved'&&!(sig?.startsWith('data:image/png')&&sig.length<400000))return bad('Please sign to approve');

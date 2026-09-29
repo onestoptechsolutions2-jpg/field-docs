@@ -7,5 +7,5 @@ export async function POST(r,{params}){const u=await getUser();if(!u)return bad(
  const token=randomBytes(18).toString('hex'),title=(b.title||t.title).trim(),link=(process.env.APP_URL||'http://'+r.headers.get('host'))+'/a/'+token;
  if(b.channel==='email'){if(!b.email)return bad('Enter the client email');
   try{await mail(b.email,`Please review and respond: ${title} (${wo.num})`,`Hello,\n\nPlease review and respond here:\n${link}\n\n${b.message||''}\n\nNanosoft Technologies Limited`)}catch(e){return bad('Email failed: '+e.message,500)}}
- await q('insert into approvals(wo_id,task_id,token,title,message,file_ids,email,phone,created_by) values($1,$2,$3,$4,$5,$6::int[],$7,$8,$9)',[wo.id,t.id,token,title,(b.message||'').slice(0,2000),ok,b.email||null,b.phone||null,u.id]);
+ await q("insert into approvals(wo_id,task_id,token,title,message,file_ids,email,phone,created_by,expires_at) values($1,$2,$3,$4,$5,$6::int[],$7,$8,$9,now()+interval '14 days')",[wo.id,t.id,token,title,(b.message||'').slice(0,2000),ok,b.email||null,b.phone||null,u.id]);
  await evt(wo.id,t.id,u,'approval-request',`Client approval requested (${b.channel||'link'}): ${title}`);return NextResponse.json({link})}

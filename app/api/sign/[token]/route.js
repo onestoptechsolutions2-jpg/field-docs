@@ -2,6 +2,7 @@ import {NextResponse} from 'next/server';import {createHash} from 'crypto';impor
 export async function POST(r,{params}){const d=(await q('select * from docs where token=$1',[params.token]))[0];
  if(!d||d.status==='draft')return NextResponse.json({error:'Not found'},{status:404});
  if(d.status==='signed')return NextResponse.json({error:'Already signed'},{status:409});
+ if(d.token_expires&&+new Date(d.token_expires)<Date.now())return NextResponse.json({error:'This link has expired'},{status:410});
  const {name,comment,sig}=await r.json();
  if(!name?.trim()||!sig?.startsWith('data:image/png')||sig.length>400000)return NextResponse.json({error:'Name and signature required'},{status:400});
  const hash=createHash('sha256').update(JSON.stringify([d.data,name,comment,sig])).digest('hex');
