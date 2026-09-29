@@ -13,7 +13,7 @@ a{color:var(--acc);text-decoration:none}.mut{color:var(--mut);font-size:13px}.gr
  .navtoggle:checked~.navlinks{display:flex}
 }
 .wrap{max-width:860px;margin:0 auto;padding:14px}
-.btn{border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:9px 14px;border-radius:10px;font:600 14px system-ui;cursor:pointer;display:inline-block}.btn.p{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn{border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:9px 14px;border-radius:10px;font:600 14px system-ui;cursor:pointer;display:inline-block}.btn.p{background:var(--acc);border-color:var(--acc);color:#fff}.btn:disabled{opacity:.45;cursor:default}
 .card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:12px}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row>input{flex:1;min-width:160px}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.tabs a,.tabs button{padding:6px 12px;border:1px solid var(--line);border-radius:99px;background:var(--paper);color:var(--ink);font-size:13px;cursor:pointer}.tabs a.on,.tabs button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
