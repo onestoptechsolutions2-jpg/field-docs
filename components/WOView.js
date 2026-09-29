@@ -6,6 +6,7 @@ const fd=d=>d?new Date(d).toLocaleString():'—',sum=o=>Object.values(o||{}).red
 const KV=({k,v,w})=><div className={w?'w2':''}><div className="kvk">{k}</div><div className="kvv">{v}</div></div>;
 export default function WOView({wo,S,C,T,ev,docs,assets,users,me,sups,G,allFiles,cinfo,teams=[],parties=[]}){
  const r=useRouter(),[err,setErr]=useState(''),[note,setNote]=useState(''),[fl,setFl]=useState(null),[as,setAs]=useState({name:'',serial:'',model:''}),sup=me.role!=='tech';
+ const [tab,setTab]=useState('tasks');
  const [editing,setEditing]=useState(false),[cancelling,setCancelling]=useState(false),[reason,setReason]=useState('');
  const [ef,setEf]=useState({client:wo.client,site:wo.site||'',contact:wo.contact||'',requirement:wo.requirement||'',priority:wo.priority,ext_ref:wo.ext_ref||''});
  const call=async(url,body,form)=>{setErr('');const x=await fetch(url,{method:'POST',body:form?body:JSON.stringify(body)}),j=await x.json().catch(()=>({}));if(!x.ok){setErr(j.error||'Failed');return null}r.refresh();return j};
@@ -36,23 +37,38 @@ export default function WOView({wo,S,C,T,ev,docs,assets,users,me,sups,G,allFiles
    <div className="row"><button className="btn p" onClick={async()=>{if(await call(`/api/wo/${wo.id}/cancel`,{reason}))setCancelling(false)}}>Confirm cancel</button><button className="link" onClick={()=>setCancelling(false)}>Back</button></div></div>}
   <div className={'card why '+tone}><div className="lbl">WHY NOT COMPLETE?</div><h2>{S.why}</h2>
    <div className="kv"><KV k="Current owner" v={S.owner}/><KV k="Current task" v={S.task||'—'}/><KV k="Status" v={SL[S.status]||S.status}/><KV k="Waiting for" v={S.waitingFor}/><KV k="Waiting since" v={S.since&&wo.status==='open'?fd(S.since):'—'}/><KV k="Duration" v={S.since&&wo.status==='open'?dur(S.waited):'—'}/><KV k="Next action" v={S.next} w/></div></div>
-  <div className="card"><b>Clocks</b><div className="kv" style={{marginTop:8}}>
-   <KV k="Planned project duration (working time)" v={dur(wo.planned_min*6e4)}/><KV k="Total project age" v={dur(C.age)}/><KV k="Internal active work" v={dur(C.active)}/><KV k="Internal waiting (assign / accept / start)" v={dur(C.assign)}/>
-   <KV k="Client waiting" v={dur(C.ext.Client||0)}/><KV k="Supplier waiting" v={dur(C.ext.Supplier||0)}/><KV k="Other external" v={dur(sum(C.ext)-(C.ext.Client||0)-(C.ext.Supplier||0))}/><KV k="Other internal waiting" v={dur(sum(C.int))}/></div>
-   <p className="mut" style={{marginBottom:0}}>Parallel tasks can overlap, so the parts can add up to more than the project age.</p></div>
-  <div className="card"><b>Gantt chart</b><Gantt G={G}/></div>
-  <div className="card"><b>Timeline &amp; stage performance</b><div className="tw"><table><thead><tr><th>Task</th><th>Owner</th><th>Plan</th><th>Actual</th><th>Variance</th><th>Status</th></tr></thead><tbody>
-   {T.map(t=><tr key={t.id}><td className="c">{t.seq}. {t.title}{t.opt&&<span className="mut"> (optional)</span>}</td><td className="c">{t.assignee_name||t.team}</td><td className="c">{planFmt(t.planned_min)}</td><td className="c" title={'Elapsed '+dur(t.clock.raw)}>{t.clock.raw?dur(t.clock.work):'—'}</td><td className="c">{vr(t)}</td><td className="c">{stc(t)}</td></tr>)}</tbody></table></div>
-   <p className="mut" style={{marginBottom:0}}>Actual and variance use working hours. Hover Actual for raw elapsed time.</p></div>
-  <div className="card"><b>Time by responsibility</b><table className="list" style={{marginTop:8}}><tbody>{Object.entries(C.byOwner).sort((a,b)=>b[1]-a[1]).map(([k,v])=><tr key={k}><td>{k}</td><td>{dur(v)}</td></tr>)}{!Object.keys(C.byOwner).length&&<tr><td className="mut">No time recorded yet.</td></tr>}</tbody></table></div>
-  <h3>Tasks</h3>
-  {T.map(t=><Task key={t.id} t={t} users={users} me={me} act={act} call={call} post={post} ev={ev} open={ACTV.includes(t.status)} router={r} sups={sups} allFiles={allFiles} cinfo={cinfo} teams={teams} parties={parties}/>)}
-  {wo.status==='open'&&sup&&<AddTask wo={wo} teams={teams} sups={sups} call={call}/>}
-  <div className="card"><b>Field documents</b><p className="mut" style={{margin:'4px 0'}}>Start these from the relevant task. They are the evidence for the work.</p>{docs.map(d=><div key={d.id}><Link href={'/docs/'+d.id}>{d.num}</Link> <span className="mut">{d.type==='sr'?'Site report':d.type==='wt'?'Work ticket':'Handover'}</span> <span className={'badge '+d.status}>{d.status}</span>{d.fin&&d.status!=='signed'&&<span className="badge done">completed</span>}</div>)}{!docs.length&&<span className="mut">None yet.</span>}</div>
-  <div className="card"><b>Assets</b>{assets.map(a=><div key={a.id}>{a.name} <span className="mut">{a.serial&&'S/N '+a.serial} {a.model}</span></div>)}
-   <div className="row" style={{marginTop:8}}><input placeholder="Asset (e.g. NVR-01)" value={as.name} onChange={e=>setAs({...as,name:e.target.value})}/><input placeholder="Serial" value={as.serial} onChange={e=>setAs({...as,serial:e.target.value})}/><input placeholder="Model" value={as.model} onChange={e=>setAs({...as,model:e.target.value})}/><button className="btn" onClick={async()=>{if(await call(`/api/wo/${wo.id}/assets`,as))setAs({name:'',serial:'',model:''})}}>Link asset</button></div></div>
-  <div className="card"><b>Activity</b><div className="row" style={{margin:'8px 0'}}><input placeholder="Add a note, call note, finding or update…" value={note} onChange={e=>setNote(e.target.value)}/><input type="file" multiple onChange={e=>setFl(e.target.files)} style={{maxWidth:220}}/><button className="btn p" onClick={()=>post(null,note,fl,()=>{setNote('');setFl(null)})}>Post</button></div>
-   {ev.map(e=><div className="ev" key={e.id}><span className="mut">{fd(e.at)} · {e.user_name} · {e.action}{e.task_id&&' · '+(T.find(t=>t.id===e.task_id)?.title||'')}</span><div>{e.comment}</div>{(e.files||[]).map(f=><a key={f.id} href={'/api/attachments/'+f.id} target="_blank" style={{marginRight:10}}>📎 {f.name}</a>)}</div>)}</div></div>}
+
+  <div className="tabs noprint">
+   <button className={tab==='tasks'?'on':''} onClick={()=>setTab('tasks')}>Tasks</button>
+   <button className={tab==='overview'?'on':''} onClick={()=>setTab('overview')}>Clocks &amp; timeline</button>
+   <button className={tab==='docs'?'on':''} onClick={()=>setTab('docs')}>Documents &amp; assets</button>
+   <button className={tab==='activity'?'on':''} onClick={()=>setTab('activity')}>Activity{ev.length>0&&' ('+ev.length+')'}</button>
+  </div>
+
+  {tab==='tasks'&&<>{T.map(t=><Task key={t.id} t={t} users={users} me={me} act={act} call={call} post={post} ev={ev} open={ACTV.includes(t.status)} router={r} sups={sups} allFiles={allFiles} cinfo={cinfo} teams={teams} parties={parties}/>)}
+   {wo.status==='open'&&sup&&<AddTask wo={wo} teams={teams} sups={sups} call={call}/>}</>}
+
+  {tab==='overview'&&<>
+   <div className="card"><b>Clocks</b><div className="kv" style={{marginTop:8}}>
+    <KV k="Planned project duration (working time)" v={dur(wo.planned_min*6e4)}/><KV k="Total project age" v={dur(C.age)}/><KV k="Internal active work" v={dur(C.active)}/><KV k="Internal waiting (assign / accept / start)" v={dur(C.assign)}/>
+    <KV k="Client waiting" v={dur(C.ext.Client||0)}/><KV k="Supplier waiting" v={dur(C.ext.Supplier||0)}/><KV k="Other external" v={dur(sum(C.ext)-(C.ext.Client||0)-(C.ext.Supplier||0))}/><KV k="Other internal waiting" v={dur(sum(C.int))}/></div>
+    <p className="mut" style={{marginBottom:0}}>Parallel tasks can overlap, so the parts can add up to more than the project age.</p></div>
+   <div className="card"><b>Gantt chart</b><Gantt G={G}/></div>
+   <div className="card"><b>Timeline &amp; stage performance</b><div className="tw"><table><thead><tr><th>Task</th><th>Owner</th><th>Plan</th><th>Actual</th><th>Variance</th><th>Status</th></tr></thead><tbody>
+    {T.map(t=><tr key={t.id}><td className="c">{t.seq}. {t.title}{t.opt&&<span className="mut"> (optional)</span>}</td><td className="c">{t.assignee_name||t.team}</td><td className="c">{planFmt(t.planned_min)}</td><td className="c" title={'Elapsed '+dur(t.clock.raw)}>{t.clock.raw?dur(t.clock.work):'—'}</td><td className="c">{vr(t)}</td><td className="c">{stc(t)}</td></tr>)}</tbody></table></div>
+    <p className="mut" style={{marginBottom:0}}>Actual and variance use working hours. Hover Actual for raw elapsed time.</p></div>
+   <div className="card"><b>Time by responsibility</b><table className="list" style={{marginTop:8}}><tbody>{Object.entries(C.byOwner).sort((a,b)=>b[1]-a[1]).map(([k,v])=><tr key={k}><td>{k}</td><td>{dur(v)}</td></tr>)}{!Object.keys(C.byOwner).length&&<tr><td className="mut">No time recorded yet.</td></tr>}</tbody></table></div>
+  </>}
+
+  {tab==='docs'&&<>
+   <div className="card"><b>Field documents</b><p className="mut" style={{margin:'4px 0'}}>Start these from the relevant task. They are the evidence for the work.</p>{docs.map(d=><div key={d.id}><Link href={'/docs/'+d.id}>{d.num}</Link> <span className="mut">{d.type==='sr'?'Site report':d.type==='wt'?'Work ticket':'Handover'}</span> <span className={'badge '+d.status}>{d.status}</span>{d.fin&&d.status!=='signed'&&<span className="badge done">completed</span>}</div>)}{!docs.length&&<span className="mut">None yet.</span>}</div>
+   <div className="card"><b>Assets</b>{assets.map(a=><div key={a.id}>{a.name} <span className="mut">{a.serial&&'S/N '+a.serial} {a.model}</span></div>)}
+    <div className="row" style={{marginTop:8}}><input placeholder="Asset (e.g. NVR-01)" value={as.name} onChange={e=>setAs({...as,name:e.target.value})}/><input placeholder="Serial" value={as.serial} onChange={e=>setAs({...as,serial:e.target.value})}/><input placeholder="Model" value={as.model} onChange={e=>setAs({...as,model:e.target.value})}/><button className="btn" onClick={async()=>{if(await call(`/api/wo/${wo.id}/assets`,as))setAs({name:'',serial:'',model:''})}}>Link asset</button></div></div>
+  </>}
+
+  {tab==='activity'&&<div className="card"><b>Activity</b><div className="row" style={{margin:'8px 0'}}><input placeholder="Add a note, call note, finding or update…" value={note} onChange={e=>setNote(e.target.value)}/><input type="file" multiple onChange={e=>setFl(e.target.files)} style={{maxWidth:220}}/><button className="btn p" onClick={()=>post(null,note,fl,()=>{setNote('');setFl(null)})}>Post</button></div>
+   {ev.map(e=><div className="ev" key={e.id}><span className="mut">{fd(e.at)} · {e.user_name} · {e.action}{e.task_id&&' · '+(T.find(t=>t.id===e.task_id)?.title||'')}</span><div>{e.comment}</div>{(e.files||[]).map(f=><a key={f.id} href={'/api/attachments/'+f.id} target="_blank" style={{marginRight:10}}>📎 {f.name}</a>)}</div>)}</div>}
+  </div>}
 function Task({t,users,sups,me,act,call,post,ev,open,router,allFiles,cinfo,teams=[],parties=[]}){
  const [wp,setWp]=useState('Client'),[wr,setWr]=useState(''),[au,setAu]=useState(''),[due,setDue]=useState(''),[dr,setDr]=useState(''),[ci,setCi]=useState(''),[rf,setRf]=useState(t.ref||''),[fl,setFl]=useState(null),[mode,setMode]=useState('');
  const [sn,setSn]=useState(''),[su,setSu]=useState(''),[sa,setSa]=useState(''),[ap,setAp]=useState(false),[af,setAf]=useState({title:t.title,message:'',email:cinfo?.email||'',phone:cinfo?.phone||'',files:[]});
