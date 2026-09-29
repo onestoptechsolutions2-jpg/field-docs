@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment: { POSTGRES_USER: fd, POSTGRES_PASSWORD: "${DB_PASSWORD:-fdpass}", POSTGRES_DB: fd }
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL","pg_isready -U fd"], interval: 3s, retries: 20 }
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on: { db: { condition: service_healthy } }
+    ports: ["3000:3000"]
+    env_file: .env
+    environment:
+      DATABASE_URL: "postgres://fd:${DB_PASSWORD:-fdpass}@db:5432/fd"
+volumes:
+  pgdata:
