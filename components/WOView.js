@@ -36,7 +36,9 @@ export default function WOView({wo,S,C,T,ev,docs,assets,users,me,sups,G,allFiles
    <div className="f"><label>Reason</label><input value={reason} onChange={e=>setReason(e.target.value)}/></div>
    <div className="row"><button className="btn p" onClick={async()=>{if(await call(`/api/wo/${wo.id}/cancel`,{reason}))setCancelling(false)}}>Confirm cancel</button><button className="link" onClick={()=>setCancelling(false)}>Back</button></div></div>}
   <div className={'card why '+tone}><div className="lbl">WHY NOT COMPLETE?</div><h2>{S.why}</h2>
-   <div className="kv"><KV k="Current owner" v={S.owner}/><KV k="Current task" v={S.task||'—'}/><KV k="Status" v={SL[S.status]||S.status}/><KV k="Waiting for" v={S.waitingFor}/><KV k="Waiting since" v={S.since&&wo.status==='open'?fd(S.since):'—'}/><KV k="Duration" v={S.since&&wo.status==='open'?dur(S.waited):'—'}/><KV k="Next action" v={S.next} w/></div></div>
+   <div className="kv"><KV k="Next action" v={S.next} w/></div>
+   <details style={{marginTop:8}}><summary className="mut" style={{cursor:'pointer'}}>More detail</summary>
+    <div className="kv" style={{marginTop:8}}><KV k="Current owner" v={S.owner}/><KV k="Current task" v={S.task||'—'}/><KV k="Status" v={SL[S.status]||S.status}/><KV k="Waiting for" v={S.waitingFor}/><KV k="Waiting since" v={S.since&&wo.status==='open'?fd(S.since):'—'}/><KV k="Duration" v={S.since&&wo.status==='open'?dur(S.waited):'—'}/></div></details></div>
 
   <div className="tabs noprint">
    <button className={tab==='tasks'?'on':''} onClick={()=>setTab('tasks')}>Tasks</button>
@@ -72,7 +74,7 @@ export default function WOView({wo,S,C,T,ev,docs,assets,users,me,sups,G,allFiles
    {ev.map(e=><div className="ev" key={e.id}><span className="mut">{fd(e.at)} · {e.user_name} · {e.action}{e.task_id&&' · '+(T.find(t=>t.id===e.task_id)?.title||'')}</span><div>{e.comment}</div>{(e.files||[]).map(f=><a key={f.id} href={'/api/attachments/'+f.id} target="_blank" style={{marginRight:10}}>📎 {f.name}</a>)}</div>)}</div>}
   </div>}
 function Task({t,users,sups,me,act,call,post,ev,open,router,allFiles,cinfo,teams=[],parties=[]}){
- const [wp,setWp]=useState('Client'),[wr,setWr]=useState(''),[au,setAu]=useState(''),[due,setDue]=useState(''),[dr,setDr]=useState(''),[ci,setCi]=useState(''),[rf,setRf]=useState(t.ref||''),[fl,setFl]=useState(null),[mode,setMode]=useState('');
+ const [wp,setWp]=useState('Client'),[wr,setWr]=useState(''),[au,setAu]=useState(''),[due,setDue]=useState(''),[dr,setDr]=useState(''),[ci,setCi]=useState(''),[rf,setRf]=useState(t.ref||''),[fl,setFl]=useState(null),[mode,setMode]=useState(''),[mgmt,setMgmt]=useState(false),[more,setMore]=useState(false);
  const [sn,setSn]=useState(''),[su,setSu]=useState(''),[sa,setSa]=useState(''),[ap,setAp]=useState(false),[af,setAf]=useState({title:t.title,message:'',email:cinfo?.email||'',phone:cinfo?.phone||'',files:[]});
  const st=t.status,sup=me.role!=='tech',act_=ACTV.includes(st),files=ev.filter(e=>e.task_id===t.id).flatMap(e=>e.files||[]),subs=t.subs||[],apps=t.approvals||[];
  const B=(l,fn,p)=><button className={'btn'+(p?' p':'')} onClick={fn}>{l}</button>,sel=[...users].sort((a,b)=>(b.team===t.team)-(a.team===t.team));
@@ -81,8 +83,9 @@ function Task({t,users,sups,me,act,call,post,ev,open,router,allFiles,cinfo,teams
   if(ch==='wa')window.open('https://wa.me/'+af.phone.replace(/\D/g,'')+'?text='+encodeURIComponent(text));if(ch==='copy')await navigator.clipboard.writeText(j.link);setAp(false)};
  return <details className="card" open={open}><summary><b>{t.seq}. {t.title}</b> <span className={'badge '+st}>{SL[st]}</span> <span className="mut">{t.team}{t.assignee_name?' · '+t.assignee_name:''}</span></summary>
   <p className="mut" style={{margin:'8px 0'}}>Plan {planFmt(t.planned_min)}{t.due_at&&' · Due '+fd(t.due_at)}{t.orig_due_at&&' (originally '+fd(t.orig_due_at)+')'}{t.rejections>0&&' · rejected '+t.rejections+'×'}{t.reopened>0&&' · returned '+t.reopened+'×'}{st==='blocked'&&' · Blocked by: '+t.blockedBy.join(', ')}</p>
-  <p style={{margin:'4px 0'}}><b>Supervisor:</b> {t.supervisor_name||'—'} {sup&&<select value="" onChange={e=>act(t.id,'set_supervisor',{user:e.target.value==='-'?'':e.target.value})} style={{width:170,marginLeft:6}}><option value="">Change…</option><option value="-">None</option>{sups.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select>}
-   {sup&&!['done','skipped'].includes(st)&&<> <b style={{marginLeft:10}}>Dept:</b> {t.team} <select value="" onChange={e=>e.target.value&&act(t.id,'reassign_team',{team:e.target.value})} style={{width:170,marginLeft:6}}><option value="">Move to…</option>{teams.filter(x=>x!==t.team).map(x=><option key={x} value={x}>{x}</option>)}</select></>}</p>
+  <p className="mut" style={{margin:'4px 0'}}>{t.team}{t.supervisor_name&&' · supervised by '+t.supervisor_name}{sup&&<button className="link" style={{marginLeft:8}} onClick={()=>setMgmt(m=>!m)}>{mgmt?'Hide':'Manage…'}</button>}</p>
+  {sup&&mgmt&&<p style={{margin:'4px 0'}}><b>Supervisor:</b> <select value="" onChange={e=>act(t.id,'set_supervisor',{user:e.target.value==='-'?'':e.target.value})} style={{width:170,marginLeft:6}}><option value="">Change…</option><option value="-">None</option>{sups.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select>
+   {!['done','skipped'].includes(st)&&<> <b style={{marginLeft:10}}>Dept:</b> <select value="" onChange={e=>e.target.value&&act(t.id,'reassign_team',{team:e.target.value})} style={{width:170,marginLeft:6}}><option value="">Move to…</option>{teams.filter(x=>x!==t.team).map(x=><option key={x} value={x}>{x}</option>)}</select></>}</p>}
   {t.next&&act_&&<p style={{margin:'4px 0'}}><b>Next:</b> {t.next}</p>}
   {t.ev.length>0&&act_&&<p style={{margin:'4px 0'}}><b>To complete:</b> {t.missing.length?<span className="err">{t.missing.join(', ')}</span>:<span style={{color:'#14733a'}}>all evidence in place ✓</span>}</p>}
   {t.chk_mode&&<div style={{margin:'8px 0'}}><b>{t.chk_mode==='items'?'Required items':'Checklist'}</b>{(t.chk||[]).map((c,i)=><div className="chk" key={i}><input type="checkbox" checked={c.done} disabled={!act_} onChange={()=>act(t.id,'check_toggle',{i})}/><span style={{textDecoration:c.done?'line-through':'none'}}>{c.t}</span>{act_&&<button className="link" onClick={()=>act(t.id,'check_del',{i})}>×</button>}</div>)}
@@ -113,11 +116,13 @@ function Task({t,users,sups,me,act,call,post,ev,open,router,allFiles,cinfo,teams
    {st==='in_progress'&&B('Complete',()=>act(t.id,'complete',{}),1)}
    {st==='waiting'&&<>{B('Resume work',()=>act(t.id,'resume',{}),!t.wait_default)}{t.wait_default&&B(t.why?'Received / done — complete':'Complete',()=>act(t.id,'complete',{}),1)}</>}
    {st==='pending_approval'&&sup&&<>{B('Approve',()=>act(t.id,'approve',{}),1)}{B('Send back…',()=>{const x=prompt('What needs correcting?');x&&act(t.id,'reject_complete',{reason:x})})}</>}
+   {t.doc_hint&&act_&&B('Start field document',async()=>{const j=await call('/api/tasks/'+t.id+'/doc',{});if(j)router.push('/docs/'+j.id)})}
+   {(act_||t.opt||st==='done')&&B(more?'Fewer options':'More…',()=>setMore(m=>!m))}</div>
+  {more&&<div className="act">
    {['ready','assigned','accepted','in_progress'].includes(st)&&B('Wait…',()=>setMode(mode==='wait'?'':'wait'))}
    {act_&&B('Revise deadline…',()=>setMode(mode==='rev'?'':'rev'))}
-   {t.doc_hint&&act_&&B('Start field document',async()=>{const j=await call('/api/tasks/'+t.id+'/doc',{});if(j)router.push('/docs/'+j.id)})}
    {t.opt&&['blocked','ready','assigned','accepted','waiting'].includes(st)&&B('Not required',()=>act(t.id,'skip',{reason:'Not required'}))}
-   {st==='done'&&sup&&B('Return for correction…',()=>{const x=prompt('What needs correcting?');x&&act(t.id,'return',{reason:x})})}</div>
+   {st==='done'&&sup&&B('Return for correction…',()=>{const x=prompt('What needs correcting?');x&&act(t.id,'return',{reason:x})})}</div>}
   {mode==='wait'&&<div className="row"><select value={wp} onChange={e=>setWp(e.target.value)} style={{width:180}}>{parties.map(p=><option key={p}>{p}</option>)}</select><input placeholder="Why are we waiting? (e.g. camera brackets unavailable)" value={wr} onChange={e=>setWr(e.target.value)}/>{B('Confirm',async()=>{if(await act(t.id,'wait',{party:wp,reason:wr}))setMode('')},1)}</div>}
   {mode==='rev'&&<div className="row"><input type="datetime-local" value={due} onChange={e=>setDue(e.target.value)} style={{maxWidth:230}}/><input placeholder="Reason for the new deadline" value={dr} onChange={e=>setDr(e.target.value)}/>{B('Save',async()=>{if(await act(t.id,'revise',{due,reason:dr}))setMode('')},1)}</div>}
  </details>}
