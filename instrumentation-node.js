@@ -35,5 +35,17 @@ export default async function start(){
    notify([d.owner],{title:"Client hasn't signed · "+d.num,body:'Sent '+Math.floor((Date.now()-+new Date(d.sent_at))/864e5)+' day(s) ago. Follow up with the client.',url:'/docs/'+d.id,tag:'chase'+d.id})}
  }catch(e){}};
  setInterval(chase,6*60*60*1000);setTimeout(chase,60000);
+ const weekKey=d=>{const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const day=(t.getUTCDay()+6)%7;t.setUTCDate(t.getUTCDate()-day+3);
+  const first=new Date(Date.UTC(t.getUTCFullYear(),0,4));const week=1+Math.round(((t-first)/864e5-3+((first.getUTCDay()+6)%7))/7);return t.getUTCFullYear()+'-W'+String(week).padStart(2,'0')};
+ const weekly=async()=>{try{const now=new Date();if(now.getDay()!==1||now.getHours()<7)return;
+  const key='kpi_week_'+weekKey(now);if(await getSet(key))return;await setSet(key,'1');
+  const {curYm,woStats}=await import('./lib/report');const {buildWorkbook}=await import('./lib/excel');const ym=curYm();
+  const wb=await buildWorkbook(ym,null),buf=await wb.xlsx.writeBuffer(),W=await woStats(ym,null);
+  const to=await q("select id,email from users where role in ('admin','supervisor')");
+  const {notify}=await import('./lib/push'),{mail}=await import('./lib/mail');
+  notify(to.map(x=>x.id),{title:'Weekly KPI report ready',body:`${ym} so far: ${W.created} created, ${W.done} done, SLA ${W.slaPct==null?'—':W.slaPct+'%'}`,url:'/reports?m='+ym,tag:'weekly',nomail:true});
+  for(const x of to){try{await mail(x.email,'Weekly KPI report - '+ym,`Attached: pipeline funnel, technician and department scorecards, 6-month trend and SLA for ${ym}.`,[{filename:'kpi-report-'+ym+'.xlsx',content:buf}])}catch(e){}}
+ }catch(e){}};
+ setInterval(weekly,30*60*1000);setTimeout(weekly,70000);
  const gen=async()=>{try{const {runDue}=await import('./lib/sched');await runDue()}catch(e){}};
  setInterval(gen,60*60*1000);setTimeout(gen,45000)}
