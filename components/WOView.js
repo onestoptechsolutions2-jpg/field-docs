@@ -6,7 +6,7 @@ const fd=d=>d?new Date(d).toLocaleString():'—',sum=o=>Object.values(o||{}).red
 const KV=({k,v,w})=><div className={w?'w2':''}><div className="kvk">{k}</div><div className="kvv">{v}</div></div>;
 export default function WOView({wo,S,C,T,ev,docs,assets,users,me,sups,G,allFiles,cinfo,teams=[],parties=[]}){
  const r=useRouter(),[err,setErr]=useState(''),[note,setNote]=useState(''),[fl,setFl]=useState(null),[as,setAs]=useState({name:'',serial:'',model:''}),sup=me.role!=='tech';
- const [tab,setTab]=useState('tasks');
+ const [tab,setTab]=useState('tasks'),[showDone,setShowDone]=useState(false);
  const [editing,setEditing]=useState(false),[cancelling,setCancelling]=useState(false),[reason,setReason]=useState('');
  const [ef,setEf]=useState({client:wo.client,site:wo.site||'',contact:wo.contact||'',requirement:wo.requirement||'',priority:wo.priority,ext_ref:wo.ext_ref||''});
  const call=async(url,body,form)=>{setErr('');const x=await fetch(url,{method:'POST',body:form?body:JSON.stringify(body)}),j=await x.json().catch(()=>({}));if(!x.ok){setErr(j.error||'Failed');return null}r.refresh();return j};
@@ -45,7 +45,9 @@ export default function WOView({wo,S,C,T,ev,docs,assets,users,me,sups,G,allFiles
    <button className={tab==='activity'?'on':''} onClick={()=>setTab('activity')}>Activity{ev.length>0&&' ('+ev.length+')'}</button>
   </div>
 
-  {tab==='tasks'&&<>{T.map(t=><Task key={t.id} t={t} users={users} me={me} act={act} call={call} post={post} ev={ev} open={ACTV.includes(t.status)} router={r} sups={sups} allFiles={allFiles} cinfo={cinfo} teams={teams} parties={parties}/>)}
+  {tab==='tasks'&&<>{T.filter(t=>showDone||!['done','skipped'].includes(t.status)).map(t=><Task key={t.id} t={t} users={users} me={me} act={act} call={call} post={post} ev={ev} open={t.id===S.p?.id} router={r} sups={sups} allFiles={allFiles} cinfo={cinfo} teams={teams} parties={parties}/>)}
+   {!showDone&&T.some(t=>['done','skipped'].includes(t.status))&&<button className="link" onClick={()=>setShowDone(true)}>Show {T.filter(t=>['done','skipped'].includes(t.status)).length} finished task{T.filter(t=>['done','skipped'].includes(t.status)).length>1?'s':''}…</button>}
+   {showDone&&<button className="link" onClick={()=>setShowDone(false)}>Hide finished tasks</button>}
    {wo.status==='open'&&sup&&<AddTask wo={wo} teams={teams} sups={sups} call={call}/>}</>}
 
   {tab==='overview'&&<>
