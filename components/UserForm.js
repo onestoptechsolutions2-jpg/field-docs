@@ -1,6 +1,6 @@
 'use client';
-import {useState} from 'react';import {useRouter} from 'next/navigation';
-export default function UserForm(){const [f,setF]=useState({role:'tech'}),[err,setErr]=useState(''),r=useRouter();const s=k=>e=>setF({...f,[k]:e.target.value});
- const go=async()=>{const x=await fetch('/api/users',{method:'POST',body:JSON.stringify(f)});if(x.ok){setF({role:'tech'});setErr('');r.refresh()}else setErr((await x.json()).error)};
+import {TEAM_LIST} from '@/lib/workflows';import {useState} from 'react';import {useRouter} from 'next/navigation';
+export default function UserForm(){const [f,setF]=useState({role:'tech',team:'Technical'}),[err,setErr]=useState(''),r=useRouter();const s=k=>e=>setF({...f,[k]:e.target.value});
+ const go=async()=>{const x=await fetch('/api/users',{method:'POST',body:JSON.stringify(f)});if(x.ok){setF({role:'tech',team:'Technical'});setErr('');r.refresh()}else setErr((await x.json()).error)};
  return <div className="card"><b>Add team member</b><div className="row" style={{margin:'8px 0'}}><input placeholder="Name" value={f.name||''} onChange={s('name')}/><input placeholder="Email" value={f.email||''} onChange={s('email')}/><input placeholder="Password (6+)" type="password" value={f.password||''} onChange={s('password')}/>
-  <select value={f.role} onChange={s('role')} style={{width:120}}><option value="tech">Technician</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option></select></div>{err&&<p className="err">{err}</p>}<button className="btn p" onClick={go}>Add</button></div>}
+  <select value={f.team} onChange={s('team')} style={{width:170}}>{TEAM_LIST.map(t=><option key={t}>{t}</option>)}</select><select value={f.role} onChange={s('role')} style={{width:120}}><option value="tech">Technician</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option></select></div>{err&&<p className="err">{err}</p>}<button className="btn p" onClick={go}>Add</button></div>}

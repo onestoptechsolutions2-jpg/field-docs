@@ -8,8 +8,8 @@ export async function POST(r,{params}){const [u,d]=await load(params.id);
  await q("update docs set esc_to=$1,esc_reason=$2,esc_note=$3,esc_status='open',esc_at=now(),esc_by=$4,esc_response=null where id=$5",[sup.id,reason,(note||'').slice(0,2000),u.id,d.id]);
  await log(d.id,`Escalated to ${sup.name}: ${reason}`);
  const link=(process.env.APP_URL||'http://'+r.headers.get('host'))+'/docs/'+d.id;
- if(sup.id!==u.id)notify([sup.id],{title:'⚑ Escalation '+d.num,body:reason+' — from '+u.name,url:'/docs/'+d.id,tag:'esc'+d.id});
- try{await mail(sup.email,`Escalation: ${d.num} – ${reason}`,`${u.name} escalated ${d.num}.\nReason: ${reason}\n${note||''}\n\nOpen: ${link}`)}catch(e){}
+ if(sup.id!==u.id)notify([sup.id],{title:'⚑ Escalation '+d.num,body:reason+' — from '+u.name+(note?'. '+note:''),url:'/docs/'+d.id,tag:'esc'+d.id});
+
  return NextResponse.json({ok:1,toName:sup.name})}
 export async function PATCH(r,{params}){const [u,d]=await load(params.id);
  if(!u||!d||u.role==='tech'||!d.esc_status)return NextResponse.json({},{status:403});

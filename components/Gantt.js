@@ -1,0 +1,10 @@
+export default function Gantt({G}){
+ const sp=G.t1-G.t0,pc=x=>((x-G.t0)/sp*100)+'%',w=(a,b)=>Math.max(.4,(b-a)/sp*100)+'%',f=x=>new Date(x).toLocaleString();
+ return <div className="tw"><div className="gt">
+  <div className="gt-head"><div className="gt-lab"/><div className="gt-area">{G.ticks.map((t,i)=><span key={i} className="gt-tick" style={{left:pc(t.x)}}>{t.l}</span>)}</div></div>
+  <div className="gt-body"><div className="gt-ov">{G.off.map(([a,b],i)=><i key={i} className="gt-off" style={{left:pc(a),width:w(a,Math.min(b,G.t1))}}/>)}{G.ticks.map((t,i)=><i key={'l'+i} className="gt-line" style={{left:pc(t.x)}}/>)}<i className="gt-now" style={{left:pc(G.now)}} title="Now"/></div>
+   {G.rows.map(r=><div className="gt-row" key={r.id}><div className="gt-lab" title={r.title}>{r.seq}. {r.title}{r.status==='blocked'&&' ⛔'}{r.status==='skipped'&&' (skipped)'}</div>
+    <div className="gt-area">{r.status!=='skipped'&&<i className="gt-plan" style={{left:pc(r.ps),width:w(r.ps,r.pe)}} title={'Planned: '+f(r.ps)+' → '+f(r.pe)}/>}
+     {r.segs.map((s,i)=><i key={i} className={'gt-seg '+s.k} style={{left:pc(s.a),width:w(s.a,s.b)}} title={s.l+': '+f(s.a)+' → '+f(s.b)}/>)}
+     {r.due&&!r.done&&<i className="gt-due" style={{left:pc(r.due)}} title={'Due '+f(r.due)}/>}</div></div>)}</div>
+  <div className="gt-legend"><span><i className="gt-plan" style={{position:'static',display:'inline-block',width:22}}/> Planned</span><span><i className="gt-seg act" style={{position:'static',display:'inline-block',width:22}}/> Active work</span><span><i className="gt-seg wext" style={{position:'static',display:'inline-block',width:22}}/> Waiting on client / supplier</span><span><i className="gt-seg wint" style={{position:'static',display:'inline-block',width:22}}/> Waiting internally</span><span><i className="gt-seg idle" style={{position:'static',display:'inline-block',width:22}}/> Assigned / not started</span><span><i className="gt-now" style={{position:'static',display:'inline-block',height:12}}/> Now</span></div></div></div>}
