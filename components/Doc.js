@@ -40,12 +40,14 @@ function Wizard({doc,data,setData,sups,me,esc,setEsc,setStatus,setMsg,msg,cl,set
  const rk=s.rk||'rows',rows=data[rk]||[],cols=s.k==='items'?C.ho:C[doc.type],list=s.k==='work'||s.k==='items';
  const up=(k,v)=>setData({...data,f:{...f,[k]:v}}),upr=(j,k,v)=>setData({...data,[rk]:rows.map((r,x)=>x===j?{...r,[k]:v}:r)});
  const ok=s.k==='fields'?(s.req||[]).every(k=>(f[k]||'').trim()):list?(!!s.opt||rows.some(nb)):s.k==='sign'?!!data.techsig&&!!(data.tech||'').trim():true;
- const next=()=>{if(last)return setData({...data,fin:true,step:0});const c=rows.filter(nb);setData({...data,step:i+1,...(list?{[rk]:c.length?c:(s.opt?[]:rows)}:{})})};
+ const next=()=>{if(last)return setData({...data,fin:true,everFinished:true});const c=rows.filter(nb);setData({...data,step:i+1,...(list?{[rk]:c.length?c:(s.opt?[]:rows)}:{})})};
+ const canJump=idx=>idx<=i||data.everFinished;
  const chips=TPL[doc.type==='wt'?'Support':f.jobtype]||[];
  const cell=(r,j,[k,l,o])=><div className="f" key={k}><label>{l}</label>{Array.isArray(o)?<select value={r[k]||''} onChange={e=>upr(j,k,e.target.value)}><option value="">Choose…</option>{o.map(x=><option key={x}>{x}</option>)}</select>:o==='area'?<textarea rows={3} value={r[k]||''} onChange={e=>upr(j,k,e.target.value)}/>:<input type={o==='num'?'number':'text'} min="0" value={r[k]||''} onChange={e=>upr(j,k,e.target.value)}/>}</div>;
  const hint=(f.outcome&&f.outcome!=='Completed')?`Your outcome is “${f.outcome}”. We recommend escalating so someone follows up.`:'If everything is done and the client is happy, just tap Next.';
  return <div className="wz"><div className="prog"><div style={{width:(i+1)/S.length*100+'%'}}/></div>
   <p className="mut" style={{margin:'6px 0 0'}}>{doc.num} · Step {i+1} of {S.length} · {msg}</p><h2>{s.t}</h2><p className="mut" style={{marginTop:0}}>{s.h}</p>
+  {S.length>1&&<div className="chipsr" style={{margin:'0 0 10px'}}>{S.map((st,idx)=><button type="button" key={idx} className={'chipb'+(idx===i?' on':'')} disabled={!canJump(idx)} onClick={()=>setData({...data,step:idx})}>{idx+1}. {st.t}</button>)}</div>}
   {s.k==='fields'&&<div className="card">{s.f.map(k=>k==='client'?<ClientPick key={k} type={doc.type} data={data} setData={setData} cl={cl} setCl={setCl}/>:<Fld key={k} k={k} v={f[k]} on={v=>up(k,v)} opts={k==='product'&&prods.length?(f.product&&!prods.includes(f.product)?[...prods,f.product]:prods):undefined}/>)}</div>}
   {list&&<>
    {s.k==='work'&&chips.length>0&&<div className="card"><span className="mut">Tap to add a common task:</span><div className="chipsr">{chips.map(c=><button key={c} className="chipb" onClick={()=>setData({...data,rows:[...(data.rows||[]).filter(nb),{w:c,s:'Done'}]})}>+ {c}</button>)}</div></div>}
@@ -59,7 +61,7 @@ function Wizard({doc,data,setData,sups,me,esc,setEsc,setStatus,setMsg,msg,cl,set
   <div className="wznav"><button className="btn" disabled={i===0} onClick={()=>setData({...data,step:i-1})}>Back</button><button className="btn p" disabled={!ok} onClick={next}>{last?'Finish ✓':'Next'}</button></div></div>}
 function View({doc,data,setData,me,sups,esc,setEsc,setStatus,setMsg,msg,status,locked,ev,cl,pics,setPics}){
  return <><div className="row noprint" style={{marginBottom:10}}><h2 style={{margin:0}}>{doc.num}</h2><span className={'badge '+status}>{status}</span>{esc.status&&<span className={'badge esc-'+esc.status}>⚑ {esc.status}</span>}<span className="mut">{msg}</span><span className="grow"/>
-  {!locked&&<button className="btn" onClick={()=>setData({...data,fin:false,step:0})}>Edit steps</button>}<button className="btn" onClick={()=>print()}>Print / PDF</button></div>
+  {!locked&&<button className="btn" onClick={()=>setData({...data,fin:false,everFinished:true})}>Edit steps</button>}<button className="btn" onClick={()=>print()}>Print / PDF</button></div>
   <div className="noprint"><Esc doc={doc} me={me} sups={sups} esc={esc} setEsc={setEsc}/>{!locked&&<div className="card"><b>Send to client for signing</b><Share doc={sd(doc,data,cl)} setStatus={setStatus} setMsg={setMsg}/></div>}</div>
   {(pics.length>0||!locked)&&<><b>Photos</b><Photos doc={doc} pics={pics} setPics={setPics} locked={locked}/></>}
   <Sheet type={doc.type} data={data}><ClientBlock d={{...doc,status}}/></Sheet>

@@ -43,7 +43,7 @@ td textarea,td select{border:0;padding:8px 7px;min-height:38px}td.n{width:34px;t
 .wz input,.wz select,.wz textarea{border:1px solid var(--line);border-radius:10px;padding:12px;font-size:16px}
 .wznav{position:sticky;bottom:0;display:flex;gap:10px;padding:12px 0;background:var(--bg)}.wznav .btn{flex:1;padding:14px}
 .entry{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--bg)}.entry .f:last-child{margin-bottom:0}
-.chipsr{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.chipb{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:99px;padding:8px 12px;font-size:13px;cursor:pointer}.chipb.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.chipsr{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.chipb{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:99px;padding:8px 12px;font-size:13px;cursor:pointer}.chipb.on{background:var(--acc);border-color:var(--acc);color:#fff}.chipb:disabled{opacity:.35;cursor:default}
 .v{flex:1;border-bottom:1px solid var(--line);padding:5px 2px;min-height:28px;white-space:pre-wrap}td.c{padding:8px 7px;white-space:pre-wrap;font-size:14px}
 .nowb{border:0;background:none;color:var(--acc);font-size:13px;cursor:pointer}.link{border:0;background:none;color:var(--mut);cursor:pointer;font-size:13px}
 .badge.esc-open{background:#fde3e3;color:#b3261e}.badge.esc-acknowledged{background:#fff2d6;color:#8a5a00}.badge.esc-resolved{background:#dff5e7;color:#14733a}
