@@ -47,10 +47,19 @@ export default function WOView({wo,S,C,T,ev,docs,assets,users,me,sups,G,allFiles
    <button className={tab==='activity'?'on':''} onClick={()=>setTab('activity')}>Activity{ev.length>0&&' ('+ev.length+')'}</button>
   </div>
 
-  {tab==='tasks'&&<>{T.filter(t=>showDone||!['done','skipped'].includes(t.status)).map(t=><Task key={t.id} t={t} users={users} me={me} act={act} call={call} post={post} ev={ev} open={t.id===S.p?.id} router={r} sups={sups} allFiles={allFiles} cinfo={cinfo} teams={teams} parties={parties}/>)}
-   {!showDone&&T.some(t=>['done','skipped'].includes(t.status))&&<button className="link" onClick={()=>setShowDone(true)}>Show {T.filter(t=>['done','skipped'].includes(t.status)).length} finished task{T.filter(t=>['done','skipped'].includes(t.status)).length>1?'s':''}…</button>}
-   {showDone&&<button className="link" onClick={()=>setShowDone(false)}>Hide finished tasks</button>}
-   {wo.status==='open'&&sup&&<AddTask wo={wo} teams={teams} sups={sups} call={call}/>}</>}
+  {tab==='tasks'&&<>{(()=>{
+    const current=T.find(t=>t.id===S.p?.id),finished=T.filter(t=>['done','skipped'].includes(t.status));
+    const others=T.filter(t=>t.id!==current?.id&&(showDone||!['done','skipped'].includes(t.status)));
+    const doneCount=finished.length,activeCount=T.filter(t=>ACTV.includes(t.status)).length;
+    return <>
+     {current&&<Task key={current.id} t={current} users={users} me={me} act={act} call={call} post={post} ev={ev} open router={r} sups={sups} allFiles={allFiles} cinfo={cinfo} teams={teams} parties={parties}/>}
+     {others.length>0&&<details className="card workflow-plan"><summary><span><b>Workflow plan</b><span className="mut">{activeCount} active · {doneCount} complete</span></span><span className="workflow-plan-count">{others.length} more</span></summary>
+      <div className="workflow-plan-list">{others.map(t=><Task key={t.id} t={t} users={users} me={me} act={act} call={call} post={post} ev={ev} open={false} router={r} sups={sups} allFiles={allFiles} cinfo={cinfo} teams={teams} parties={parties}/>)}</div>
+     </details>}
+     {!showDone&&doneCount>0&&<button className="link" onClick={()=>setShowDone(true)}>Show {doneCount} finished task{doneCount>1?'s':''}</button>}
+     {showDone&&<button className="link" onClick={()=>setShowDone(false)}>Hide finished tasks</button>}
+     {wo.status==='open'&&sup&&<AddTask wo={wo} teams={teams} sups={sups} call={call}/>}
+    </>})()}</>}
 
   {tab==='overview'&&<>
    <div className="card"><b>Clocks</b><div className="kv" style={{marginTop:8}}>
