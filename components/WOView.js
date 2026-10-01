@@ -1,6 +1,6 @@
 'use client';
 import {useState} from 'react';import {useRouter} from 'next/navigation';import Link from 'next/link';
-import {dur,planFmt} from '@/lib/time';import Gantt from './Gantt';
+import {dur,planFmt} from '@/lib/time';import Gantt from './Gantt';import PersonPick from './PersonPick';
 const SL={blocked:'Blocked',ready:'Ready · unassigned',assigned:'Awaiting acceptance',accepted:'Accepted',in_progress:'In progress',waiting:'Waiting',pending_approval:'Pending approval',done:'Done',skipped:'Skipped'};
 const fd=d=>d?new Date(d).toLocaleString():'—',sum=o=>Object.values(o||{}).reduce((a,b)=>a+b,0),ACTV=['ready','assigned','accepted','in_progress','waiting','pending_approval'];
 const KV=({k,v,w})=><div className={w?'w2':''}><div className="kvk">{k}</div><div className="kvv">{v}</div></div>;
@@ -78,13 +78,13 @@ function Task({t,users,sups,me,act,call,post,ev,open,router,allFiles,cinfo,teams
  const [sn,setSn]=useState(''),[su,setSu]=useState(''),[sa,setSa]=useState(''),[ap,setAp]=useState(false),[af,setAf]=useState({title:t.title,message:'',email:cinfo?.email||'',phone:cinfo?.phone||'',files:[]});
  const st=t.status,sup=me.role!=='tech',act_=ACTV.includes(st),files=ev.filter(e=>e.task_id===t.id).flatMap(e=>e.files||[]),subs=t.subs||[],apps=t.approvals||[];
  const B=(l,fn,p)=><button className={'btn'+(p?' p':'')} onClick={fn}>{l}</button>,sel=[...users].sort((a,b)=>(b.team===t.team)-(a.team===t.team));
- const assign=<><select value={au} onChange={e=>setAu(e.target.value)} style={{width:200}}><option value="">Assign to…</option>{sel.map(x=><option key={x.id} value={x.id}>{x.name} · {x.team}</option>)}</select>{B('Assign',()=>act(t.id,'assign',{user:au}))}</>;
+ const assign=<><PersonPick users={sel} value={au} onChange={setAu} team={t.team} placeholder="Assign to…" width={200}/>{B('Assign',()=>act(t.id,'assign',{user:au}))}</>;
  const sendAp=async ch=>{const j=await call('/api/tasks/'+t.id+'/approval',{...af,file_ids:af.files,channel:ch});if(!j)return;const text=`Hello, please review and respond: ${af.title} — ${j.link}`;
   if(ch==='wa')window.open('https://wa.me/'+af.phone.replace(/\D/g,'')+'?text='+encodeURIComponent(text));if(ch==='copy')await navigator.clipboard.writeText(j.link);setAp(false)};
  return <details className="card" open={open}><summary><b>{t.seq}. {t.title}</b> <span className={'badge '+st}>{SL[st]}</span> <span className="mut">{t.team}{t.assignee_name?' · '+t.assignee_name:''}</span></summary>
   <p className="mut" style={{margin:'8px 0'}}>Plan {planFmt(t.planned_min)}{t.due_at&&' · Due '+fd(t.due_at)}{t.orig_due_at&&' (originally '+fd(t.orig_due_at)+')'}{t.rejections>0&&' · rejected '+t.rejections+'×'}{t.reopened>0&&' · returned '+t.reopened+'×'}{st==='blocked'&&' · Blocked by: '+t.blockedBy.join(', ')}</p>
   <p className="mut" style={{margin:'4px 0'}}>{t.team}{t.supervisor_name&&' · supervised by '+t.supervisor_name}{sup&&<button className="link" style={{marginLeft:8}} onClick={()=>setMgmt(m=>!m)}>{mgmt?'Hide':'Manage…'}</button>}</p>
-  {sup&&mgmt&&<p style={{margin:'4px 0'}}><b>Supervisor:</b> <select value="" onChange={e=>act(t.id,'set_supervisor',{user:e.target.value==='-'?'':e.target.value})} style={{width:170,marginLeft:6}}><option value="">Change…</option><option value="-">None</option>{sups.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select>
+  {sup&&mgmt&&<p style={{margin:'4px 0'}}><b>Supervisor:</b> <PersonPick users={sups} value="" onChange={v=>act(t.id,'set_supervisor',{user:v==='-'?'':v})} newRole="supervisor" placeholder="Change…" width={170} extraOption={{value:'-',label:'None'}}/>
    {!['done','skipped'].includes(st)&&<> <b style={{marginLeft:10}}>Dept:</b> <select value="" onChange={e=>e.target.value&&act(t.id,'reassign_team',{team:e.target.value})} style={{width:170,marginLeft:6}}><option value="">Move to…</option>{teams.filter(x=>x!==t.team).map(x=><option key={x} value={x}>{x}</option>)}</select></>}</p>}
   {t.next&&act_&&<p style={{margin:'4px 0'}}><b>Next:</b> {t.next}</p>}
   {t.ev.length>0&&act_&&<p style={{margin:'4px 0'}}><b>To complete:</b> {t.missing.length?<span className="err">{t.missing.join(', ')}</span>:<span style={{color:'#14733a'}}>all evidence in place ✓</span>}</p>}
@@ -95,9 +95,9 @@ function Task({t,users,sups,me,act,call,post,ev,open,router,allFiles,cinfo,teams
     <span className={'badge '+(s.status==='done'?'done':s.status==='in_progress'?'in_progress':'blocked')}>{blk?'blocked':s.status==='todo'?'to do':s.status.replace('_',' ')}</span>
     <span style={{textDecoration:s.status==='done'?'line-through':'none'}}>{s.title}</span><span className="mut">{s.assignee_name||'unassigned'}{b&&' · waits on “'+b.title+'”'}</span>
     {s.status==='todo'&&!b&&B('Start',()=>act(t.id,'sub_start',{id:s.id}))}{s.status!=='done'&&!b&&B('Done',()=>act(t.id,'sub_done',{id:s.id}),1)}{s.status==='done'&&B('Reopen',()=>act(t.id,'sub_reopen',{id:s.id}))}
-    {s.status!=='done'&&<select value="" onChange={e=>e.target.value&&act(t.id,'sub_assign',{id:s.id,user:e.target.value})} style={{width:130}}><option value="">Assign…</option>{sel.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select>}
+    {s.status!=='done'&&<PersonPick users={sel} value="" onChange={v=>v&&act(t.id,'sub_assign',{id:s.id,user:v})} team={t.team} placeholder="Assign…" width={130}/>}
     <button className="link" onClick={()=>act(t.id,'sub_del',{id:s.id})}>×</button></div>})}
-   {act_&&<div className="row" style={{marginTop:6}}><input placeholder="Add a sub-task" value={sn} onChange={e=>setSn(e.target.value)}/><select value={su} onChange={e=>setSu(e.target.value)} style={{width:150}}><option value="">Assignee…</option>{sel.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select>
+   {act_&&<div className="row" style={{marginTop:6}}><input placeholder="Add a sub-task" value={sn} onChange={e=>setSn(e.target.value)}/><PersonPick users={sel} value={su} onChange={setSu} team={t.team} placeholder="Assignee…" width={150}/>
     <select value={sa} onChange={e=>setSa(e.target.value)} style={{width:170}}><option value="">Can start anytime</option>{subs.filter(s=>s.status!=='done').map(s=>{return <option key={s.id} value={s.id}>After: {s.title}</option>})}</select>{B('Add',async()=>{if(await act(t.id,'sub_add',{title:sn,user:su,after:sa}))setSn('')})}</div>}</div>}
   {(act_||st==='done')&&<div className="row" style={{margin:'8px 0'}}><input placeholder="External reference (PO, quotation, invoice, link)" value={rf} onChange={e=>setRf(e.target.value)}/>{B('Save reference',()=>act(t.id,'ref',{ref:rf}))}</div>}
   {act_&&<div className="row" style={{margin:'8px 0'}}><input type="file" multiple onChange={e=>setFl(e.target.files)}/>{B('Attach',()=>fl&&post(t.id,'',fl,()=>setFl(null)))}</div>}

@@ -1,5 +1,5 @@
 'use client';
-import {useState} from 'react';import {useRouter} from 'next/navigation';import Link from 'next/link';
+import {useState} from 'react';import {useRouter} from 'next/navigation';import Link from 'next/link';import PersonPick from './PersonPick';
 const FREQ=[['weekly','Weekly'],['fortnightly','Every 2 weeks'],['monthly','Monthly'],['quarterly','Quarterly'],['biannual','Every 6 months'],['yearly','Yearly']];
 export default function ScheduleAdmin({items,clients,templates,sups}){
  const r=useRouter(),[f,setF]=useState({frequency:'monthly',priority:'Normal',next_run:new Date().toISOString().slice(0,10)}),[err,setErr]=useState(''),[msg,setMsg]=useState('');
@@ -14,7 +14,7 @@ export default function ScheduleAdmin({items,clients,templates,sups}){
    <div className="f"><label>Site</label><input value={f.site||''} onChange={s('site')}/></div>
    <div className="f"><label>How often</label><select value={f.frequency} onChange={s('frequency')}>{FREQ.map(([k,l])=><option key={k} value={k}>{l}</option>)}</select></div>
    <div className="f"><label>First run date</label><input type="date" value={f.next_run} onChange={s('next_run')}/></div>
-   <div className="f"><label>Supervisor (optional)</label><select value={f.supervisor_id||''} onChange={s('supervisor_id')}><option value="">None</option>{sups.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></div>
+   <div className="f"><label>Supervisor (optional)</label><PersonPick users={sups} value={f.supervisor_id} onChange={v=>setF({...f,supervisor_id:v})} newRole="supervisor" placeholder="None"/></div>
    <div className="f"><label>Requirement / notes</label><textarea rows={2} value={f.requirement||''} onChange={s('requirement')}/></div>
    {err&&<p className="err">{err}</p>}<button className="btn p" onClick={async()=>{if(await call({action:'create',...f}))setF({...f,name:'',requirement:''})}}>Create schedule</button></div>
   <div className="row" style={{margin:'8px 0'}}><h3 style={{margin:0}}>Active schedules</h3><span className="grow"/><button className="btn" onClick={async()=>{const j=await call({action:'run_due'});if(j)setMsg(j.ids.length?`Created ${j.ids.length} work order(s).`:'Nothing is due.')}}>Run everything due now</button></div>{msg&&<p>{msg}</p>}
